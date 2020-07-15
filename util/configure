@@ -142,6 +142,8 @@ my (@ngx_opts, @ngx_cc_opts, @ngx_ld_opts);
 # by the user's own --with-cc-opt=OPTS option):
 push @ngx_cc_opts, "-O2";
 
+$resty_opts{no_http_encrypted_session} = 1;
+
 for my $opt (@ARGV) {
     next unless defined $opt;
 
@@ -309,7 +311,6 @@ for my $opt (@ARGV) {
 
     } elsif ($opt eq '--without-http_ssl_module') {
         $resty_opts{no_http_ssl} = 1;
-        $resty_opts{no_http_encrypted_session} = 1;
 
     } elsif ($opt eq '--with-stream_ssl_module') {
         $resty_opts{stream_ssl} = 1;
