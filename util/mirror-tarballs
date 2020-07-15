@@ -28,9 +28,19 @@ fi
 #################################
 
 ver="$main_ver"
-$root/util/get-tarball "https://openresty.org/download/nginx-$ver.tar.gz" -O nginx-$ver.tar.gz || exit 1
-tar -xzf nginx-$ver.tar.gz || exit 1
+if [[ "$NGINX_QUIC" == "1" ]]; then
+    $root/util/get-tarball "https://hg.nginx.org/nginx-quic/archive/tip.tar.gz" -O nginx-$ver.tar.gz || exit 1
+    tar -xzf nginx-$ver.tar.gz || exit 1
+    mv nginx-quic* nginx-$ver
+else
+    $root/util/get-tarball "https://openresty.org/download/nginx-$ver.tar.gz" -O nginx-$ver.tar.gz || exit 1
+    tar -xzf nginx-$ver.tar.gz || exit 1
+fi
 cd nginx-$ver || exit 1
+
+if [[ "$NGINX_QUIC" == "1" ]]; then
+    cp ./auto/configure .
+fi
 
 echo "$info_txt applying the nginx-$main_ver-win32_max_err_str.patch"
 patch -p1 < $root/patches/nginx-$main_ver-win32_max_err_str.patch || exit 1
@@ -144,12 +154,14 @@ echo "$info_txt applying the upstream-pipelining patch for nginx"
 patch -p1 < $root/patches/nginx-$main_ver-upstream_pipelining.patch || exit 1
 echo
 
-echo "$info_txt applying the server_header patch for nginx"
-cp $root/patches/nginx-$main_ver-server_header.patch server_header.patch || exit 1
-sed $"s/NGINX_VERSION \".unknown\"/NGINX_VERSION \".$minor_ver\"/" server_header.patch \
-    > server_header.patch.tmp && mv -f server_header.patch.tmp server_header.patch || exit 1
-patch -p1 < server_header.patch || exit 1
-echo
+if [[ "$NGINX_QUIC" == "" ]]; then
+    echo "$info_txt applying the server_header patch for nginx"
+    cp $root/patches/nginx-$main_ver-server_header.patch server_header.patch || exit 1
+    sed $"s/NGINX_VERSION \".unknown\"/NGINX_VERSION \".$minor_ver\"/" server_header.patch \
+        > server_header.patch.tmp && mv -f server_header.patch.tmp server_header.patch || exit 1
+    patch -p1 < server_header.patch || exit 1
+    echo
+fi
 
 #patch -p1 < $root/patches/nginx-$main_ver-redirect_memcpy_overlap.patch || exit 1
 
@@ -964,5 +976,6 @@ find bundle -name '*.orig' -delete
 
 cd $root || exit 1
 
+ln -s $name openresty
 tar cf $name.tar $name || exit 1
 gzip -f --best $name.tar || exit 1

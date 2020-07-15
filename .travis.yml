@@ -1,5 +1,5 @@
 sudo: required
-dist: xenial
+dist: bionic
 
 os: linux
 
@@ -34,6 +34,7 @@ linux-s390x: &linux-s390x
             - libpcre3-dev 
             - mercurial 
             - libpq-dev
+            - unzip
   install:
     - sudo cpanm --notest Test::Nginx IPC::Run3 > build.log 2>&1 || (cat build.log && exit 1)
     - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz || wget -P download-cache https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz; fi
@@ -72,42 +73,75 @@ env:
     - OPENSSL_INC=$OPENSSL_PREFIX/include
     - OPENRESTY_PREFIX=/opt/openresty
   matrix:
-    - OPENSSL_VER=1.0.2u OPENSSL_PATCH_VER=1.0.2h
-    - OPENSSL_VER=1.1.0l OPENSSL_PATCH_VER=1.1.0d
-    - OPENSSL_VER=1.1.1f OPENSSL_PATCH_VER=1.1.1f
+#    - OPENSSL_VER=1.0.2u OPENSSL_PATCH_VER=1.0.2h
+#    - OPENSSL_VER=1.1.0l OPENSSL_PATCH_VER=1.1.0d
+#    - OPENSSL_VER=1.1.1f OPENSSL_PATCH_VER=1.1.1f
+    - BORINGSSL_VER=master
+    - NGINX_QUIC=1 BORINGSSL_VER=master
 
 jobs:
     include:
-        - <<: *linux-s390x
-          env: OPENSSL_VER=1.0.2u OPENSSL_PATCH_VER=1.0.2h
-        - <<: *linux-s390x
-          env: OPENSSL_VER=1.1.0l OPENSSL_PATCH_VER=1.1.0d
-        - <<: *linux-s390x
-          env: OPENSSL_VER=1.1.1f OPENSSL_PATCH_VER=1.1.1f
+#        - <<: *linux-s390x
+#          env: OPENSSL_VER=1.0.2u OPENSSL_PATCH_VER=1.0.2h
+#        - <<: *linux-s390x
+#          env: OPENSSL_VER=1.1.0l OPENSSL_PATCH_VER=1.1.0d
+#        - <<: *linux-s390x
+#          env: OPENSSL_VER=1.1.1f OPENSSL_PATCH_VER=1.1.1f
 
 install:
   - sudo cpanm --notest Test::Nginx IPC::Run3 > build.log 2>&1 || (cat build.log && exit 1)
   - if [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -P download-cache https://ftp.pcre.org/pub/pcre/pcre-$PCRE_VER.tar.gz; fi
-  - if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz || wget -P download-cache https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz; fi
   - tar zxf download-cache/pcre-$PCRE_VER.tar.gz
   - cd pcre-$PCRE_VER/
   - ./configure --prefix=$PCRE_PREFIX --enable-jit --enable-utf --enable-unicode-properties > build.log 2>&1 || (cat build.log && exit 1)
   - make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
   - sudo PATH=$PATH make install > build.log 2>&1 || (cat build.log && exit 1)
   - cd ..
-  - tar zxf download-cache/openssl-$OPENSSL_VER.tar.gz
-  - cd openssl-$OPENSSL_VER/
-  - patch -p1 < ../patches/openssl-$OPENSSL_PATCH_VER-sess_set_get_cb_yield.patch
-  - ./config no-threads shared enable-ssl3 enable-ssl3-method -g --prefix=$OPENSSL_PREFIX -DPURIFY > build.log 2>&1 || (cat build.log && exit 1)
-  - make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
-  - sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1)
-  - cd ..
+  - | 
+      if [[ "$BORINGSSL_VER" != "" ]]; then
+        wget -q -O - https://raw.githubusercontent.com/canha/golang-tools-install-script/master/goinstall.sh | GOROOT="" bash -s -- --version 1.13.2
+        set -e
+        source /home/travis/.bashrc
+        if [ ! -f download-cache/openssl-$BORINGSSL_VER.tar.gz ]; then wget -P download-cache https://github.com/google/boringssl/archive/$BORINGSSL_VER.zip; fi
+        unzip -q download-cache/$BORINGSSL_VER.zip
+        cd boringssl-$BORINGSSL_VER
+        mkdir build
+        cd build
+        cmake ..
+        make
+        mkdir -p $OPENSSL_LIB
+        cp "crypto/libcrypto.a" "$OPENSSL_LIB/"
+        cp "ssl/libssl.a" "$OPENSSL_LIB/"
+        cd ..
+        cp -r include "$OPENSSL_PREFIX"
+      else
+        set -e
+        if [ ! -f download-cache/openssl-$OPENSSL_VER.tar.gz ]; then wget -P download-cache https://www.openssl.org/source/openssl-$OPENSSL_VER.tar.gz || wget -P download-cache https://www.openssl.org/source/old/${OPENSSL_VER//[a-z]/}/openssl-$OPENSSL_VER.tar.gz; fi
+        tar zxf download-cache/openssl-$OPENSSL_VER.tar.gz
+        cd openssl-$OPENSSL_VER/
+        patch -p1 < ../patches/openssl-$OPENSSL_PATCH_VER-sess_set_get_cb_yield.patch
+        ./config no-threads shared enable-ssl3 enable-ssl3-method -g --prefix=$OPENSSL_PREFIX -DPURIFY > build.log 2>&1 || (cat build.log && exit 1)
+        make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
+        sudo make PATH=$PATH install_sw > build.log 2>&1 || (cat build.log && exit 1)
+      fi
+      cd ..
   - sudo ln -s /usr/bin/make /usr/bin/gmake
 
 script:
   - util/mirror-tarballs > build.log 2>&1 || (cat build.log && exit 1)
-  - cd openresty-*
-  - ./configure --prefix=$OPENRESTY_PREFIX --with-cc-opt="-I$PCRE_INC -I$OPENSSL_INC" --with-ld-opt="-L$PCRE_LIB -L$OPENSSL_LIB -Wl,-rpath,$PCRE_LIB:$OPENSSL_LIB" --with-pcre-jit --with-http_ssl_module --with-debug -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
+  - ls -las .
+  - cd openresty
+  - |
+      set -e
+      if [[ "$BORINGSSL_VERSION" != "" ]]; then
+        ls -las $OPENSSL_PREFIX/*
+        SSLMODOPT="--with-openssl=$OPENSSL_PREFIX"
+      fi 
+      if [[ "$NGINX_QUIC" == "1" ]]; then
+        SSLMODOPT="$SSLMODOPT --with-http_v3_module"
+        ls -las $OPENSSL_PREFIX/include
+      fi
+      ./configure --prefix=$OPENRESTY_PREFIX --with-cc-opt="-I$PCRE_INC -I$OPENSSL_INC" --with-ld-opt="-L$PCRE_LIB -L$OPENSSL_LIB -Wl,-rpath,$PCRE_LIB:$OPENSSL_LIB" --with-pcre-jit --with-http_ssl_module $SSLMODOPT --with-debug -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
   - make -j$JOBS > build.log 2>&1 || (cat build.log && exit 1)
   - sudo make install > build.log 2>&1 || (cat build.log && exit 1)
   - cd ..
