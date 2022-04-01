@@ -94,7 +94,7 @@ recommended though).
 Debugging
 =========
 
-Debug symbosl are enabled even in release builds. So that when things go very wrong,
+Debug symbols are enabled even in release builds. So that when things go very wrong,
 one can still debug things with tools like MSYS2 GDB.
 
 Inclusion of debug symbols make the binary files (`.exe` and `.dll` files) much larger,
@@ -123,7 +123,7 @@ TODO
 package redistribution.
 * Bundle StrawberryPerl to make command-line utilities like `resty` work out of the box (without
 manually installing a Perl).
-* Deliver an alternative Win32/Win64 binary package built with best debuggin capabilities (like enabling
+* Deliver an alternative Win32/Win64 binary package built with best debugging capabilities (like enabling
 NGINX debugging logs, disabling C compiler optimizations, and enabling all the assertions and checks).
 
 [Back to TOC](#table-of-contents)
@@ -136,7 +136,7 @@ side. But if you do, please read on.
 
 The Win32/Win64 build of OpenResty is currently built via the MSYS2/MinGW toolchain, including
 MinGW gcc 7.2.3, MSYS2 perl 5.24.4, MSYS2 bash, MSYS2 make, and etc. Basically, it is currently built via
- the following cmmands:
+ the following commands:
 
 ```bash
 PCRE=pcre-8.42

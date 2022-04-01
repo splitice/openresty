@@ -227,7 +227,7 @@ of an C<__index> table (if any) may be modified afterwards. The
 associated metatable automatically applies to all uses of this type, no
 matter how the objects are created or where they originate from. Note
 that pre-defined operations on types have precedence (e.g. declared
-field names cannot be overriden).
+field names cannot be overridden).
 
 All standard Lua metamethods are implemented. These are called
 directly, without shortcuts and on any mix of types. For binary
@@ -326,7 +326,7 @@ of the string is computed with C<strlen()>.
 
 Otherwise C<ptr> is converted to a C<"void *"> and C<len> gives the
 length of the data. The data may contain embedded zeros and need not be
-byte-oriented (though this may cause endianess issues).
+byte-oriented (though this may cause endianness issues).
 
 This function is mainly useful to convert (temporary) C<"const char *">
 pointers returned by C functions to Lua strings and store them or pass
