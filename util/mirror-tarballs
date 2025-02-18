@@ -524,6 +524,15 @@ if [ "$answer" = "Y" ]; then
     fi
 fi
 
+answer=`$root/util/ver-ge "$main_ver" 1.21.4`
+if [ "$answer" = "Y" ]; then
+    answer=`$root/util/ver-ge "$main_ver" 1.27.4`
+    if [ "$answer" = "N" ]; then
+        echo "$info_txt applying the patch for nginx security advisory (CVE-2025-23419)"
+        patch -p1 < $root/patches/nginx-$main_ver-CVE-2025-23419.patch || exit 1
+    fi
+fi
+
 
 echo "$info_txt applying the upstream_timeout_fields patch for nginx"
 patch -p1 < $root/patches/nginx-$main_ver-upstream_timeout_fields.patch || exit 1
@@ -540,6 +549,13 @@ echo
 echo "$info_txt applying the reuseport_close_unused_fds patch for nginx"
 patch -p1 < $root/patches/nginx-$main_ver-reuseport_close_unused_fds.patch || exit 1
 echo
+
+
+answer=`$root/util/ver-ge "$main_ver" 1.19.9`
+if [ "$answer" = "Y" ]; then
+    echo "$info_txt applying nginx-$main_ver-proc_exit_handler patch for nginx"
+    patch -p1 < $root/patches/nginx-$main_ver-proc_exit_handler.patch || exit 1
+fi
 
 cp $root/html/index.html docs/html/ || exit 1
 cp $root/html/50x.html docs/html/ || exit 1
@@ -583,7 +599,7 @@ mv openresty-set-misc-nginx-module-* set-misc-nginx-module-$ver || exit 1
 
 #################################
 
-ver=0.16
+ver=0.17
 $root/util/get-tarball "https://github.com/openresty/rds-json-nginx-module/tarball/v$ver" -O rds-json-nginx-module-$ver.tar.gz || exit 1
 tar -xzf rds-json-nginx-module-$ver.tar.gz || exit 1
 mv openresty-rds-json-nginx-module-* rds-json-nginx-module-$ver || exit 1
@@ -611,7 +627,7 @@ mv openresty-drizzle-nginx-module-* drizzle-nginx-module-$ver || exit 1
 
 #################################
 
-ver=0.10.26
+ver=0.10.28
 $root/util/get-tarball "https://github.com/openresty/lua-nginx-module/archive/v$ver.tar.gz" -O lua-nginx-module-$ver.tar.gz || exit 1
 tar -xzf lua-nginx-module-$ver.tar.gz || exit 1
 mv lua-nginx-module-$ver ngx_lua-$ver || exit 1
@@ -625,7 +641,7 @@ mv openresty-lua-upstream-nginx-module-* ngx_lua_upstream-$ver || exit 1
 
 #################################
 
-ver=0.0.14
+ver=0.0.16
 $root/util/get-tarball "https://github.com/openresty/stream-lua-nginx-module/tarball/v$ver" -O stream-lua-nginx-module-$ver.tar.gz || exit 1
 tar -xzf stream-lua-nginx-module-$ver.tar.gz || exit 1
 mv openresty-stream-lua-nginx-module-* ngx_stream_lua-$ver || exit 1
@@ -744,7 +760,7 @@ mv openresty-opm-* opm-$ver || exit 1
 
 #################################
 
-ver=2.1-20231117
+ver=2.1-20250117
 $root/util/get-tarball "https://github.com/openresty/luajit2/archive/v$ver.tar.gz" -O "LuaJIT-$ver.tar.gz" || exit 1
 tar -xzf LuaJIT-$ver.tar.gz || exit 1
 mv luajit2-* LuaJIT-$ver || exit 1
@@ -757,7 +773,7 @@ cd .. || exit 1
 
 #################################
 
-ver=2.1.0.13
+ver=2.1.0.14
 $root/util/get-tarball "https://github.com/openresty/lua-cjson/archive/$ver.tar.gz" -O "lua-cjson-$ver.tar.gz" || exit 1
 tar -xzf lua-cjson-$ver.tar.gz || exit 1
 
@@ -802,7 +818,7 @@ cd ..
 
 #################################
 
-ver=0.30
+ver=0.31
 $root/util/get-tarball "https://github.com/openresty/lua-resty-redis/tarball/v$ver" -O "lua-resty-redis-$ver.tar.gz" || exit 1
 tar -xzf lua-resty-redis-$ver.tar.gz || exit 1
 mv openresty-lua-resty-redis-* lua-resty-redis-$ver || exit 1
@@ -842,7 +858,7 @@ cd ..
 
 #################################
 
-ver=0.15
+ver=0.16
 $root/util/get-tarball "https://github.com/openresty/lua-resty-string/tarball/v$ver" -O "lua-resty-string-$ver.tar.gz" || exit 1
 tar -xzf lua-resty-string-$ver.tar.gz || exit 1
 mv openresty-lua-resty-string-* lua-resty-string-$ver || exit 1
@@ -853,7 +869,7 @@ cd ..
 
 #################################
 
-ver=0.11
+ver=0.12
 $root/util/get-tarball "https://github.com/openresty/lua-resty-websocket/tarball/v$ver" -O "lua-resty-websocket-$ver.tar.gz" || exit 1
 tar -xzf lua-resty-websocket-$ver.tar.gz || exit 1
 mv openresty-lua-resty-websocket-* lua-resty-websocket-$ver || exit 1
@@ -875,7 +891,7 @@ cd ..
 
 #################################
 
-ver=0.13
+ver=0.15
 $root/util/get-tarball "https://github.com/openresty/lua-resty-lrucache/tarball/v$ver" -O "lua-resty-lrucache-$ver.tar.gz" || exit 1
 tar -xzf lua-resty-lrucache-$ver.tar.gz || exit 1
 mv openresty-lua-resty-lrucache-* lua-resty-lrucache-$ver || exit 1
@@ -886,7 +902,7 @@ cd ..
 
 #################################
 
-ver=0.1.28
+ver=0.1.31
 $root/util/get-tarball "https://github.com/openresty/lua-resty-core/tarball/v$ver" -O "lua-resty-core-$ver.tar.gz" || exit 1
 tar -xzf lua-resty-core-$ver.tar.gz || exit 1
 mv openresty-lua-resty-core-* lua-resty-core-$ver || exit 1
@@ -915,7 +931,7 @@ cd ..
 
 #################################
 
-ver=0.03
+ver=0.04
 $root/util/get-tarball "https://github.com/openresty/lua-resty-signal/tarball/v$ver" -O "lua-resty-signal-$ver.tar.gz" || exit 1
 tar -xzf lua-resty-signal-$ver.tar.gz || exit 1
 mv openresty-lua-resty-signal-* lua-resty-signal-$ver || exit 1
@@ -966,15 +982,20 @@ nginx_xml2pod=$bundle_dir/$resty_cli/bin/nginx-xml2pod
 curdir=$PWD
 cd $root/work/ || exit 1
 if [ -d nginx.org ]; then
-    cd nginx.org/ || exit 1
-    hg pull || exit 1
-    hg update --clean || exit 1
-    cd ..
+    if [ -f nginx.org/.git/config ];then
+        cd nginx.org/ || exit 1
+        git checkout -f || exit 1
+        git pull || exit 1
+        cd ..
+    else
+        rm -rf nginx.org || exit 1
+        git clone https://github.com/nginx/nginx.org || exit 1
+    fi
 else
-    hg clone http://hg.nginx.org/nginx.org || exit 1
+    git clone https://github.com/nginx/nginx.org || exit 1
 fi
 cd nginx.org/ || exit 1
-hg purge --config extensions.purge= || exit 1
+git clean -f || exit 1
 find xml/en/docs -name 'ngx_http_api_module.xml' -delete
 rm xml/en/docs/njs/*
 $nginx_xml2pod xml/en/docs || exit 1
